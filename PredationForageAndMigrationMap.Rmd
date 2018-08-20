@@ -1,0 +1,130 @@
+---
+title: "Predation Risk, Forage, and Migration Map"
+author: "HansMartin"
+date: "August 20, 2018"
+output: html_document
+---
+```{r include=FALSE, echo=FALSE,echo=FALSE, message=FALSE}
+#function to install and load required packages
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+#load or install these packages:
+packages <- c("ks", "lattice", "plotrix", "adehabitatHR", "maptools", "foreign", "rgdal", "sp", "raster",
+              "ggplot2","colorRamps","rgeos","leaflet","lubridate", "htmlwidgets","move", "tmap","grid", "leaflet", "dplyr")
+
+#run function to install packages
+ipak(packages)
+```
+
+
+```{r include=FALSE, echo=FALSE,echo=FALSE, message=FALSE}
+CollarData<-read.csv(file="C:/Users/Hans Martin/Documents/ElkCollarData/BullElk_18/BullElkGPSData7_18_2018.csv", stringsAsFactors = F)
+```
+
+
+
+```{r include=FALSE, echo=FALSE,echo=FALSE, message=FALSE}
+#format timestamp
+CollarData$FxDate_Time_GMT <- as.POSIXct(CollarData$Date...Time..GMT., "%m/%d/%y %H:%M", tz="GMT")
+#remove rows with NA and 0 values
+GPSData<-CollarData %>% filter(complete.cases(Longitude,Latitude))
+GPSData$GMTDate
+coords<-cbind(GPSData$Longitude,GPSData$Latitude) #vector of coordinates
+sp=SpatialPoints(coords, #vector of coordinates
+                 CRS("+proj=longlat +ellps=WGS84") #specify the coordinate reference system
+                 ) 
+GPSspdf<-SpatialPointsDataFrame(
+  coords=sp, 
+  data=GPSData #add data to make this a spatial points data frame
+)
+GPSspdf<-spTransform(GPSspdf,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+```
+
+
+```{r include=FALSE, echo=FALSE,echo=FALSE, message=FALSE}
+#Study Extent
+studyextent<-readOGR("C:/Users/Hans Martin/Documents/R_Data/AnnualReportFigureData/YHT Study Extent/YHTstudy_extent.shp")
+studyextent<-spTransform(studyextent,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")) #reproject using the landcover projection
+#Ya Ha Tinda Boundary
+yahatinda<-readOGR("C:/Users/Hans Martin/Documents/R_Data/AnnualReportFigureData/YaHaTindaShape")
+proj4string(yahatinda)<-CRS("+proj=utm +zone=11 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+yahatinda<-spTransform(yahatinda,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+
+#Park Regions
+BanffRegions<-readOGR("C:/Users/Hans Martin/Documents/R_Data/AnnualReportFigureData/Basebnp_region/basebnp_region.shp")
+BanffRegions<-spTransform(BanffRegions,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+```
+
+
+
+```{r include=FALSE, echo=FALSE,message=FALSE}
+WinterLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT<"2018-04-15 00:00:00",]
+SpringLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-04-15 00:00:00"& GPSspdf$FxDate_Time_GMT<"2018-06-01 00:00:00",]
+SummerLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-06-01 00:00:00",]
+tmap_mode('view')
+BullElkSummerandWinterLocations<-
+  #tm_shape(elevation)+ #loads file (either shape file, raster file, etc...)
+  #tm_raster()+#specifies how r should plot the file (either as a raster, polygon, line, symbol)
+  tm_shape(BanffRegions)+ # loads banff shape file
+  tm_polygons(alpha = .5)+ #plots the shapefile as a polygonalpha =0.5 controls transparency (0-1)
+tm_shape(studyextent)+# loads banff shape file
+ tm_borders(col = "Red")+ #plots only the boundary of the shapefile 
+tm_shape(yahatinda)+
+  tm_polygons(col="darkgray")+
+
+tm_shape(WinterLocations)+
+    tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+              col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+              #labels = c("Winter Locations"),
+              title.col =  "AnimalID")+
+  tm_shape(SpringLocations)+
+    tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+              col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+              #labels = c("Winter Locations"),
+              title.col =  "AnimalID")+
+  tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+  tm_shape(SummerLocations)+
+  tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+             col="Device.Name" #color is associated with the column "park" in the spatialpointsdataframe
+             #labels = c("Winter Locations"),
+            # title.col =  "AnimalID"
+            )+
+  tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+  
+#tm_shape(GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-05-01 00:00:00",])+
+  #tm_symbols(size=0.01, #plots the spatialpoints dataframe as symbols
+   #          col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+   #          labels = c("Summer Locations"),
+   #          title.col =  "AnimalID")+
+ # tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+  #tm_compass(position=c("right", "top"))+ #inserts a compass showing north.
+  
+  tm_add_legend(type="line", col=c("red"), title="Study Area") + #adds a custom legend
+  
+  tm_add_legend(type="fill", col=c("lightgrey"), title="National Park Boundary") + #adds a custom legend 
+  
+  tm_add_legend(type="fill", col=c("darkgray"), title="Ya Ha Tinda Ranch") +#adds a custom legend
+  tm_scale_bar(position = c("left","bottom"))+
+    
+  tm_layout(
+    main.title = "Bull Elk Distribution Winter and Summer",#text for main title
+            main.title.size = 0.745, #size of main title
+            main.title.position= c("center"),#position of main title ("top","right","bottom")
+            #outer.margins = c(0,0,0,0.01), 
+            inner.margins = c(0.01,0.01,0.01,0.11), 
+            #between.margin = 0.1,
+            compass.type = "arrow", #type of compass rose
+
+            legend.outside = T, # places the legend inside the map or outside
+            legend.title.size=0.75,
+            legend.text.size=0.5,
+            legend.just = c("right", "top")#specifies legend location
+    ) 
+
+
+```
