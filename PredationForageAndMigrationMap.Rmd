@@ -15,7 +15,7 @@ ipak <- function(pkg){
 
 #load or install these packages:
 packages <- c("ks", "lattice", "plotrix", "adehabitatHR", "maptools", "foreign", "rgdal", "sp", "raster",
-              "ggplot2","colorRamps","rgeos","leaflet","lubridate", "htmlwidgets","move", "tmap","grid", "leaflet", "dplyr")
+              "ggplot2","colorRamps","rgeos","leaflet","lubridate", "htmlwidgets","move", "tmap","grid", "leaflet", "dplyr", "shinyjs")
 
 #run function to install packages
 ipak(packages)
@@ -43,6 +43,12 @@ GPSspdf<-SpatialPointsDataFrame(
   data=GPSData #add data to make this a spatial points data frame
 )
 GPSspdf<-spTransform(GPSspdf,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+#winter locations
+WinterLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT<"2018-04-15 00:00:00",]
+#spring locations april 15-june 1
+SpringLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-04-15 00:00:00"& GPSspdf$FxDate_Time_GMT<"2018-06-01 00:00:00",]
+#summer locations june 1 to july 30th
+SummerLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-06-01 00:00:00",]
 ```
 
 
@@ -55,76 +61,494 @@ yahatinda<-readOGR("C:/Users/Hans Martin/Documents/R_Data/AnnualReportFigureData
 proj4string(yahatinda)<-CRS("+proj=utm +zone=11 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
 yahatinda<-spTransform(yahatinda,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
 
+elevation<-raster("C:/Users/Hans Martin/Documents/R_Data/AnnualReportFigureData/ElevationDEM/elevationDEMPRJwgs84.tif")
+#Predation risk
+predrisk<-raster("avgsumprednt.tif")
+predrisk<-projectRaster(predrisk,crs="+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+
+#forage<-raster("meanforage.tif")
+#forage<-projectRaster(forage,crs="+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+#WMU's
+#wmu_416<-readOGR("E:/YHTGISDATA/AB WMU/wmu416.shp")
+#wmu_416<-spTransform(wmu_416,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+#wmu_417<-readOGR("E:/YHTGISDATA/AB WMU/wmu417.shp")
+#wmu_417<-spTransform(wmu_417,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+#wmu_418<-readOGR("E:/YHTGISDATA/AB WMU/wmu418.shp")
+#wmu_418<-spTransform(wmu_418,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+#wmu_420<-readOGR("E:/YHTGISDATA/AB WMU/wmu420.shp")
+#wmu_420<-spTransform(wmu_420,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
 #Park Regions
 BanffRegions<-readOGR("C:/Users/Hans Martin/Documents/R_Data/AnnualReportFigureData/Basebnp_region/basebnp_region.shp")
 BanffRegions<-spTransform(BanffRegions,CRS("+proj=utm +zone=11 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
 ```
 
+#WMU polygons
+```{r include=FALSE, echo=FALSE,message=FALSE}
+#WMU polygons
+wmus<-readOGR("E:/YHTGISDATA/bf_wmu_polygon_FULL.shp.kml")
 
+wmu420<-wmus[wmus$Name=="Clearwater",]
+wmu418<-wmus[wmus$Name=="Ya-Ha Tinda",]
+wmu416<-wmus[wmus$Name=="Corners",]
+wmu318<-wmus[wmus$Name=="James",]
+wmu316<-wmus[wmus$Name=="Harold Creek",]
+wmu422<-wmus[wmus$Name=="Hummingbird",]
+wmu414<-wmus[wmus$Name=="Burnt Timber",]
+wmu417<-wmus[wmus$Name=="Wilson",]
+wmu326<-wmus[wmus$Name=="Baseline",]
+wmu736<-wmus[wmus$Name=="Siffleur Wilderness",]
+wmu734<-wmus[wmus$Name=="Ghost River Wilderness",]
+wmu428<-wmus[wmus$Name=="Kiska",]
+wmu426<-wmus[wmus$Name=="Upper Saskatchewan",]
+wmu314<-wmus[wmus$Name=="Little Red",]
+wmu429<-wmus[wmus$Name=="Meadows",]
+```
 
 ```{r include=FALSE, echo=FALSE,message=FALSE}
-WinterLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT<"2018-04-15 00:00:00",]
-SpringLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-04-15 00:00:00"& GPSspdf$FxDate_Time_GMT<"2018-06-01 00:00:00",]
-SummerLocations<-GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-06-01 00:00:00",]
-tmap_mode('view')
-BullElkSummerandWinterLocations<-
-  #tm_shape(elevation)+ #loads file (either shape file, raster file, etc...)
-  #tm_raster()+#specifies how r should plot the file (either as a raster, polygon, line, symbol)
-  tm_shape(BanffRegions)+ # loads banff shape file
-  tm_polygons(alpha = .5)+ #plots the shapefile as a polygonalpha =0.5 controls transparency (0-1)
-tm_shape(studyextent)+# loads banff shape file
- tm_borders(col = "Red")+ #plots only the boundary of the shapefile 
-tm_shape(yahatinda)+
-  tm_polygons(col="darkgray")+
 
-tm_shape(WinterLocations)+
-    tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
-              col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
-              #labels = c("Winter Locations"),
-              title.col =  "AnimalID")+
-  tm_shape(SpringLocations)+
-    tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
-              col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
-              #labels = c("Winter Locations"),
-              title.col =  "AnimalID")+
-  tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+#tmap_mode('view')
+# BullElkSummerandWinterLocations<-
+#   tm_shape(elevation)+ #loads file (either shape file, raster file, etc...)
+#   tm_raster()+#specifies how r should plot the file (either as a raster, polygon, line, symbol)
+#   
+# tm_shape(studyextent)+# loads banff shape file
+#  tm_borders(col = c("black"),lwd = 2)+
+#   #tm_fill(col="red")+#plots only the boundary of the shapefile 
+#   tm_shape(BanffRegions)+ # loads banff shape file
+#   tm_polygons(col=c("darkgreen"),alpha = .2)+
+#   #plots the shapefile as a polygonalpha =0.5 controls transparency (0-1)
+# 
+# tm_shape(wmu420)+
+#   tm_polygons(col="gold",alpha = .2)+
+# tm_shape(wmu418)+
+#   tm_polygons(col="gold",alpha = .2)+
+# tm_shape(wmu416)+
+#   tm_polygons(col="gold",alpha = .2)+
+# tm_shape(wmu318)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu316)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu417)+
+#   tm_polygons(col="gold",alpha = .2)+
+# tm_shape(wmu422)+
+#   tm_polygons(col="gold",alpha = .2)+
+# tm_shape(wmu414)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu326)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu736)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu734)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu428)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu426)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu314)+
+#   tm_polygons(col="red",alpha = .2)+
+# tm_shape(wmu429)+
+#   tm_polygons(col="red",alpha = .2)+
+# 
+# #tm_shape(predrisk)+
+# #tm_raster()+
+# #tm_shape(forage)+
+#   #tm_raster(forage)+
+# #tm_shape(WinterLocations)+
+#     # tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+#     #           col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+#     #           #labels = c("Winter Locations"),
+#     #           title.col =  "AnimalID")+
+#   # #tm_shape(SpringLocations)+
+#   #   tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+#   #             col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+#   #             #labels = c("Winter Locations"),
+#   #             title.col =  "AnimalID")+
+#   # tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+#   tm_shape(SummerLocations)+
+#   tm_symbols(size=0.005#, #plots the spatialpoints dataframe as symbols
+#              #col="Device.Name"#, #color is associated with the column "park" in the spatialpointsdataframe
+#              #labels = c("Winter Locations"),
+#              #title.col =  "AnimalID"
+#             )+
+#   tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+#   
+# #tm_shape(GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-05-01 00:00:00",])+
+#   #tm_symbols(size=0.01, #plots the spatialpoints dataframe as symbols
+#    #          col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+#    #          labels = c("Summer Locations"),
+#    #          title.col =  "AnimalID")+
+#  # tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+#   tm_compass(position=c("right", "top"))+ #inserts a compass showing north.
+#   
+#   tm_add_legend(type="line", col=c("red"), title="Study Area") + #adds a custom legend
+#   
+#   tm_add_legend(type="fill", col=c("lightgrey"), title="National Park Boundary") + #adds a custom legend 
+#   
+#   tm_add_legend(type="fill", col=c("darkgray"), title="Ya Ha Tinda Ranch") +#adds a custom legend
+#   tm_scale_bar(position = c("left","bottom"))+
+#     
+#   tm_layout(
+#     main.title = "Bull Elk Distribution Winter and Summer",#text for main title
+#             main.title.size = 0.745, #size of main title
+#             main.title.position= c("center"),#position of main title ("top","right","bottom")
+#             #outer.margins = c(0,0,0,0.01), 
+#             inner.margins = c(0.01,0.01,0.01,0.11), 
+#             #between.margin = 0.1,
+#             compass.type = "arrow", #type of compass rose
+# 
+#             legend.outside = F, # places the legend inside the map or outside
+#             legend.title.size=0.75,
+#             legend.text.size=0.5,
+#             legend.just = c("right", "top")#specifies legend location
+#     ) 
+# #print(BullElkSummerandWinterLocations)
+
+plot(seq(from=1, to=3,length.out = 10),col= colorRampPalette(c("red","orange","blue"))) 
+```
+
+```{r}
+BullElkLocPredRiskWMUtmap<-
+  
+#tm_shape(elevation)+ #loads file (either shape file, raster file, etc...)
+ # tm_raster(palette = grey.colors(n = 6,start = 1,end = 0.2), alpha=.5, title = "Elevation (m)")+#specifies how r should plot the file (either as a raster, polygon, line, symbol)
+  #tm_shape(predrisk)+
+  #tm_raster(palette ="OrRd",n=10,alpha=0.8, title="Wolf Predation Risk")+# colorRampPalette(c("green","yellow", "red"))(n = 10), alpha=0.5, title="Wolf Predation Risk")+#heat.colors(n=10,start=2/6, end=0, alpha = 0.5), title = "Wolf Predation Risk")+
+
+  #tm_fill(col="red")+#plots only the boundary of the shapefile 
+  tm_shape(BanffRegions)+ # loads banff shape file
+  tm_borders(col ="black")+
+  #tm_polygons(col=c("darkgreen"),alpha = .2)+
+  #plots the shapefile as a polygonalpha =0.5 controls transparency (0-1)
+
+tm_shape(wmu420)+
+  tm_polygons(col="gold",alpha = .2)+
+tm_shape(wmu418)+
+  tm_polygons(col="gold",alpha = .2)+
+tm_shape(wmu416)+
+  tm_polygons(col="gold",alpha = .2)+
+tm_shape(wmu318)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu316)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu417)+
+  tm_polygons(col="gold",alpha = .2)+
+tm_shape(wmu422)+
+  tm_polygons(col="gold",alpha = .2)+
+tm_shape(wmu414)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu326)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu736)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu734)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu428)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu426)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu314)+
+  tm_polygons(col="red",alpha = .2)+
+tm_shape(wmu429)+
+  tm_polygons(col="red",alpha = .2)+
+ tm_shape(yahatinda)+
+   tm_borders(col = "darkgrey")+
+#   
+tm_shape(studyextent)+# loads banff shape file
+ tm_borders(col = c("black"),lwd = 2)+ 
+  #Elk locations
   tm_shape(SummerLocations)+
-  tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
-             col="Device.Name" #color is associated with the column "park" in the spatialpointsdataframe
-             #labels = c("Winter Locations"),
-            # title.col =  "AnimalID"
+  tm_symbols(size=0.05,shape = 18, #plots the spatialpoints dataframe as symbols
+             col="black"#, #color is associated with the column "park" in the spatialpointsdataframe
+             #labels = c("Locations"),
+             #title.col =  "AnimalID"
             )+
-  tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+
+#tm_shape(forage)+
+  #tm_raster(forage)+
+#tm_shape(WinterLocations)+
+    # tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+    #           col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+    #           #labels = c("Winter Locations"),
+    #           title.col =  "AnimalID")+
+  # #tm_shape(SpringLocations)+
+  #   tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+  #             col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+  #             #labels = c("Winter Locations"),
+  #             title.col =  "AnimalID")+
+  # tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
   
-#tm_shape(GPSspdf[GPSspdf$FxDate_Time_GMT>"2018-05-01 00:00:00",])+
-  #tm_symbols(size=0.01, #plots the spatialpoints dataframe as symbols
-   #          col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
-   #          labels = c("Summer Locations"),
-   #          title.col =  "AnimalID")+
- # tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
-  #tm_compass(position=c("right", "top"))+ #inserts a compass showing north.
+  tm_compass(position=c("right", "top"))+ #inserts a compass showing north.
   
-  tm_add_legend(type="line", col=c("red"), title="Study Area") + #adds a custom legend
+  tm_add_legend(type="line",lwd=2, col=c("black"), title="Study Area") + #adds a custom legend
   
-  tm_add_legend(type="fill", col=c("lightgrey"), title="National Park Boundary") + #adds a custom legend 
-  
+  tm_add_legend(type="line", col=c("black"), title="National Park Boundary") + #adds a custom legend 
+ 
   tm_add_legend(type="fill", col=c("darkgray"), title="Ya Ha Tinda Ranch") +#adds a custom legend
-  tm_scale_bar(position = c("left","bottom"))+
-    
+  
+  tm_add_legend(type="fill", col=c("red"), title="WMU- 3pt, General Season") +#adds a custom legend
+  
+  
+  tm_add_legend(type="fill", col=c("gold"),  title="WMU- 6pt, 5-10 licenses per unit") +
+  tm_add_legend(type="fill", col=c("darkgreen"), title="BNP- No Hunting Permitted") +
+  tm_add_legend(type="symbol", size=0.05, col="black",  title="Male Elk Locations 1 June- 28 July")+
   tm_layout(
-    main.title = "Bull Elk Distribution Winter and Summer",#text for main title
-            main.title.size = 0.745, #size of main title
-            main.title.position= c("center"),#position of main title ("top","right","bottom")
+    #main.title = ,#text for main title
+            #main.title.size = 0.745, #size of main title
+            #main.title.position= c("center"),#position of main title ("top","right","bottom")
             #outer.margins = c(0,0,0,0.01), 
             inner.margins = c(0.01,0.01,0.01,0.11), 
             #between.margin = 0.1,
             compass.type = "arrow", #type of compass rose
-
             legend.outside = T, # places the legend inside the map or outside
             legend.title.size=0.75,
-            legend.text.size=0.5,
+            legend.text.size=0.75,
             legend.just = c("right", "top")#specifies legend location
     ) 
 
 
+
+  save_tmap(tm=BullElkLocWMUtmap, #object name
+           filename="WMUBullelkloc.tiff", #save map to this filename
+            width=6.5, #width of saved image
+          height=6.5, #height of saved image
+            units="in", #units "in", "cm"
+            dpi=300#, #dpi
+            #insets_tm = yahatindamap, #tmap object to inset
+            #insets_vp=viewport(x=0.2, y=0.155, width=0.4, height=0.4) #location of the inset map
+            )
+
+```
+
+```{r}
+BullElkLocPredRiskWMUtmap<-
+  
+#tm_shape(elevation)+ #loads file (either shape file, raster file, etc...)
+ # tm_raster(palette = grey.colors(n = 6,start = 1,end = 0.2), alpha=.5, title = "Elevation (m)")+#specifies how r should plot the file (either as a raster, polygon, line, symbol)
+  tm_shape(predrisk)+
+  tm_raster(palette ="OrRd",n=10,alpha=0.8, title="Wolf Predation Risk", leg)+# colorRampPalette(c("green","yellow", "red"))(n = 10), alpha=0.5, title="Wolf Predation Risk")+#heat.colors(n=10,start=2/6, end=0, alpha = 0.5), title = "Wolf Predation Risk")+
+
+  #tm_fill(col="red")+#plots only the boundary of the shapefile 
+  tm_shape(BanffRegions)+ # loads banff shape file
+  tm_borders(col ="darkgreen")+
+  #tm_polygons(col=c("darkgreen"),alpha = .2)+
+  #plots the shapefile as a polygonalpha =0.5 controls transparency (0-1)
+
+tm_shape(wmu420)+
+  tm_borders(col="gold")+
+tm_shape(wmu418)+
+  tm_borders(col="gold")+
+tm_shape(wmu416)+
+  tm_borders(col="gold")+
+tm_shape(wmu318)+
+  tm_borders(col="red")+
+tm_shape(wmu316)+
+  tm_borders(col="red")+
+tm_shape(wmu417)+
+  tm_borders(col="gold")+
+tm_shape(wmu422)+
+  tm_borders(col="gold")+
+tm_shape(wmu414)+
+  tm_borders(col="red")+
+tm_shape(wmu326)+
+  tm_borders(col="red")+
+tm_shape(wmu736)+
+  tm_borders(col="red")+
+tm_shape(wmu734)+
+  tm_borders(col="red")+
+tm_shape(wmu428)+
+  tm_borders(col="red")+
+tm_shape(wmu426)+
+  tm_borders(col="red")+
+tm_shape(wmu314)+
+  tm_borders(col="red")+
+tm_shape(wmu429)+
+  tm_borders(col="red")+
+ tm_shape(yahatinda)+
+   tm_borders(col = "darkgrey")+
+#   
+tm_shape(studyextent)+# loads banff shape file
+ tm_borders(col = c("black"),lwd = 2)+ 
+  #Elk locations
+  tm_shape(SummerLocations)+
+  tm_symbols(size=0.05,shape = 18, #plots the spatialpoints dataframe as symbols
+             col="black"#, #color is associated with the column "park" in the spatialpointsdataframe
+             #labels = c("Locations"),
+             #title.col =  "AnimalID"
+            )+
+
+#tm_shape(forage)+
+  #tm_raster(forage)+
+#tm_shape(WinterLocations)+
+    # tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+    #           col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+    #           #labels = c("Winter Locations"),
+    #           title.col =  "AnimalID")+
+  # #tm_shape(SpringLocations)+
+  #   tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+  #             col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+  #             #labels = c("Winter Locations"),
+  #             title.col =  "AnimalID")+
+  # tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+  
+  tm_compass(position=c("right", "top"))+ #inserts a compass showing north.
+  
+  tm_add_legend(type="line",lwd=2, col=c("black"), title="Study Area") + #adds a custom legend
+  
+  tm_add_legend(type="line", col=c("black"), title="National Park Boundary") + #adds a custom legend 
+ 
+  tm_add_legend(type="line", col=c("darkgray"), title="Ya Ha Tinda Ranch") +#adds a custom legend
+  
+  tm_add_legend(type="line", col=c("red"), title="WMU- 3pt, General Season") +#adds a custom legend
+  
+  
+  tm_add_legend(type="line", col=c("gold"),  title="WMU- 6pt, 5-10 licenses per unit") +
+  tm_add_legend(type="line", col=c("darkgreen"), title="BNP- No Hunting Permitted") +
+  tm_add_legend(type="symbol", size=0.05, col="black",  title="Male Elk Locations 1 June- 28 July")+
+  tm_layout(
+    #main.title = ,#text for main title
+            #main.title.size = 0.745, #size of main title
+            #main.title.position= c("center"),#position of main title ("top","right","bottom")
+            #outer.margins = c(0,0,0,0.01), 
+            inner.margins = c(0.01,0.01,0.01,0.11), 
+            #between.margin = 0.1,
+            compass.type = "arrow", #type of compass rose
+            legend.outside = T, # places the legend inside the map or outside
+            legend.title.size=0.75,
+            legend.text.size=0.75,
+            legend.just = c("right", "top")#specifies legend location
+    ) 
+
+
+
+  save_tmap(tm=BullElkLocPredRiskWMUtmap, #object name
+           filename="PRWMUBullelkloc.tiff", #save map to this filename
+            width=6.5, #width of saved image
+          height=6.5, #height of saved image
+            units="in", #units "in", "cm"
+            dpi=300#, #dpi
+            #insets_tm = yahatindamap, #tmap object to inset
+            #insets_vp=viewport(x=0.2, y=0.155, width=0.4, height=0.4) #location of the inset map
+            )
+
+```
+
+```{r echo=FALSE, message=FALSE, fig.height=10, fig.width=10}
+tmap_leaflet(BullElkLocWMUtmap,mode="view")
+```
+
+
+```{r}
+studareatmap<-
+  
+#tm_shape(elevation)+ #loads file (either shape file, raster file, etc...)
+ # tm_raster(palette = grey.colors(n = 6,start = 1,end = 0.2), alpha=.5, title = "Elevation (m)")+#specifies how r should plot the file (either as a raster, polygon, line, symbol)
+  # tm_shape(predrisk)+
+  # tm_raster(palette ="OrRd",n=10,alpha=0.8, title="Wolf Predation Risk", leg)+# colorRampPalette(c("green","yellow", "red"))(n = 10), alpha=0.5, title="Wolf Predation Risk")+#heat.colors(n=10,start=2/6, end=0, alpha = 0.5), title = "Wolf Predation Risk")+
+
+  #tm_fill(col="red")+#plots only the boundary of the shapefile 
+  tm_shape(BanffRegions)+ # loads banff shape file
+  tm_borders(col ="darkgreen")+
+  #tm_polygons(col=c("darkgreen"),alpha = .2)+
+  #plots the shapefile as a polygonalpha =0.5 controls transparency (0-1)
+# 
+# tm_shape(wmu420)+
+#   tm_borders(col="gold")+
+# tm_shape(wmu418)+
+#   tm_borders(col="gold")+
+# tm_shape(wmu416)+
+#   tm_borders(col="gold")+
+# tm_shape(wmu318)+
+#   tm_borders(col="red")+
+# tm_shape(wmu316)+
+#   tm_borders(col="red")+
+# tm_shape(wmu417)+
+#   tm_borders(col="gold")+
+# tm_shape(wmu422)+
+#   tm_borders(col="gold")+
+# tm_shape(wmu414)+
+#   tm_borders(col="red")+
+# tm_shape(wmu326)+
+#   tm_borders(col="red")+
+# tm_shape(wmu736)+
+#   tm_borders(col="red")+
+# tm_shape(wmu734)+
+#   tm_borders(col="red")+
+# tm_shape(wmu428)+
+#   tm_borders(col="red")+
+# tm_shape(wmu426)+
+#   tm_borders(col="red")+
+# tm_shape(wmu314)+
+#   tm_borders(col="red")+
+# tm_shape(wmu429)+
+#   tm_borders(col="red")+
+#  tm_shape(yahatinda)+
+#    tm_borders(col = "darkgrey")+
+#   
+tm_shape(studyextent)+# loads banff shape file
+ tm_borders(col = c("black"),lwd = 2)+ 
+  #Elk locations
+  # tm_shape(SummerLocations)+
+  # tm_symbols(size=0.05,shape = 18, #plots the spatialpoints dataframe as symbols
+  #            col="black"#, #color is associated with the column "park" in the spatialpointsdataframe
+  #            #labels = c("Locations"),
+  #            #title.col =  "AnimalID"
+  #           )+
+
+#tm_shape(forage)+
+  #tm_raster(forage)+
+#tm_shape(WinterLocations)+
+    # tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+    #           col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+    #           #labels = c("Winter Locations"),
+    #           title.col =  "AnimalID")+
+  # #tm_shape(SpringLocations)+
+  #   tm_symbols(size=0.005, #plots the spatialpoints dataframe as symbols
+  #             col="Device.Name", #color is associated with the column "park" in the spatialpointsdataframe
+  #             #labels = c("Winter Locations"),
+  #             title.col =  "AnimalID")+
+  # tm_style_col_blind()+ #uses a colorblind cooperative colorscheme for the symbols
+  
+  #tm_compass(position=c("right", "top"))+ #inserts a compass showing north.
+  
+  #tm_add_legend(type="line",lwd=2, col=c("black"), title="Study Area") + #adds a custom legend
+  
+  #tm_add_legend(type="line", col=c("black"), title="National Park Boundary") + #adds a custom legend 
+ 
+  #tm_add_legend(type="line", col=c("darkgray"), title="Ya Ha Tinda Ranch") +#adds a custom legend
+  
+  #tm_add_legend(type="line", col=c("red"), title="WMU- 3pt, General Season") +#adds a custom legend
+  
+  
+  #tm_add_legend(type="line", col=c("gold"),  title="WMU- 6pt, 5-10 licenses per unit") +
+  #tm_add_legend(type="line", col=c("darkgreen"), title="BNP- No Hunting Permitted") +
+ # tm_add_legend(type="symbol", size=0.05, col="black",  title="Male Elk Locations 1 June- 28 July")+
+  tm_layout(
+    #main.title = ,#text for main title
+            #main.title.size = 0.745, #size of main title
+            #main.title.position= c("center"),#position of main title ("top","right","bottom")
+            #outer.margins = c(0,0,0,0.01), 
+            inner.margins = c(0.01,0.01,0.01,0.11), 
+            #between.margin = 0.1,
+            compass.type = "arrow", #type of compass rose
+            legend.outside = T, # places the legend inside the map or outside
+            legend.title.size=0.75,
+            legend.text.size=0.75,
+            legend.just = c("right", "top")#specifies legend location
+    ) 
+
+
+
+  # save_tmap(tm=studareatmap, #object name
+  #          filename="studyarea.tiff", #save map to this filename
+  #           width=6.5, #width of saved image
+  #         height=6.5, #height of saved image
+  #           units="in", #units "in", "cm"
+  #           dpi=300#, #dpi
+  #           #insets_tm = yahatindamap, #tmap object to inset
+  #           #insets_vp=viewport(x=0.2, y=0.155, width=0.4, height=0.4) #location of the inset map
+  #           )
+
+```
+```{r echo=FALSE, message=FALSE, fig.height=15, fig.width=15}
+tmap_leaflet(studareatmap,mode="view")
 ```

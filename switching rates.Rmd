@@ -1,0 +1,163 @@
+---
+title: "IFD Figures"
+author: "HansMartin"
+date: "August 22, 2018"
+output: html_document
+---
+
+```{r include=FALSE, echo=FALSE,echo=FALSE, message=FALSE}
+#function to install and load required packages
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+#load or install these packages:
+packages <- c("ks", "lattice", "plotrix",  "foreign", 
+              "ggplot2","colorRamps","htmlwidgets","grid", "dplyr","officer", "rvg")
+
+#run function to install packages
+ipak(packages)
+library(officer)
+library(rvg)
+```
+
+```{r}
+# load slide
+ppt <- read_pptx("Proposal Presentation.pptx")
+
+# create slide
+doc1 <- add_slide(ppt,layout="Title and Content",master="Office Theme")
+
+# add in graphic
+doc1 <- ph_with_vg(doc1, 
+                  code = plot(fig1),
+                  #plot(out_time_graph,out_lag2_graph,type="l"),
+                  type="body")
+doc2 <- add_slide(doc1,layout="Title and Content",master="Office Theme")
+
+# add in graphic
+doc2 <- ph_with_vg(doc2, 
+                  code = plot(fig2),
+                  #plot(out_time_graph,out_lag2_graph,type="l"),
+                  type="body")
+doc3 <- add_slide(doc2,layout="Title and Content",master="Office Theme")
+
+# add in graphic
+doc3 <- ph_with_vg(doc3, 
+                  code = plot(fig3),
+                  #plot(out_time_graph,out_lag2_graph,type="l"),
+                  type="body")
+# create/save
+print(doc2,target="Proposal Presentation.pptx")
+
+
+# load slide
+ppt <- read_pptx("figrandomswitch.pptx")
+
+# create slide
+doc5 <- add_slide(ppt,layout="Title and Content",master="Office Theme")
+
+# add in graphic
+doc5 <- ph_with_vg(doc5, 
+                  code = plot(fig5),
+                  #plot(out_time_graph,out_lag2_graph,type="l"),
+                  type="body")
+ #create/save
+print(doc5,target="figrandomswitch.pptx")
+
+```
+
+```{r}
+a<- seq(from=1, to=100, length.out=100)
+b<-rnorm(100,0,0.2)
+c<-a*(-0.019)+0.95+b
+simdat<-data.frame(a,c)
+fig1<-ggplot(simdat,aes(a,c))+geom_point()+geom_smooth(method=lm, se=F)+theme_bw()+ylim(c(-1,1))+ylab("Switching Rate")+xlab("Density")
+  
+```
+
+```{r}
+a<- seq(1:100)
+b<-rnorm(100,0,0.2)
+#c<-a*(-0.02)+0.95+b
+simdat2<-data.frame(a,b)
+fig2<-ggplot(simdat2,aes(a,b))+geom_point()+geom_smooth(method=lm,se=F)+theme_bw()+ylim(c(-1,1))+ylab("Switching Rate")+xlab("Density")
+  
+```
+
+```{r}
+a<- seq(1:100)
+b<-rnorm(100,0,0.2)
+c<-0.4+b
+simdat3<-data.frame(a,c)
+fig3<-ggplot(simdat3,aes(a,c))+geom_point()+geom_smooth(method=lm, se=F)+theme_bw()+ylim(c(-1,1))+ylab("Switching Rate")+xlab("Density")
+  
+```
+
+
+```{r}
+a<- seq(1:100)
+b<-rnorm(100,0,0.2)
+c<-b
+simdat5<-data.frame(a,c)
+fig5<-ggplot(simdat5,aes(a,c))+geom_point()+geom_smooth(method=lm, se=F)+theme_bw()+ylim(c(-1,1))+ylab("Switching Rate")+xlab("Density")
+  
+```
+
+
+#Switching rate 
+
+
+```{r}
+swdata<-read.csv("Switching rate.csv",stringsAsFactors = F)
+head(swdata)
+fig6<-ggplot(swdata[swdata$Direction=="RM",],aes(Year,PrSwitch))+geom_point()+geom_line()+geom_smooth(method=lm, se=F)+theme_bw()+ylim(c(0,1))+ylab("Switching Rate")+xlab("Year")
+
+# load slide
+ppt <- read_pptx("switchfigure.pptx")
+
+# create slide
+doc6 <- add_slide(ppt,layout="Title and Content",master="Office Theme")
+
+# add in graphic
+doc6 <- ph_with_vg(doc6, 
+                  code = plot(fig6),
+                  #plot(out_time_graph,out_lag2_graph,type="l"),
+                  type="body")
+ #create/save
+print(doc6,target="switchfigure.pptx")
+```
+
+Density Dependent Growth
+```{r}
+#density dependent (logistic) growth
+#continuous growth model
+#parameters
+T<-50
+N0<-100
+K<-500
+rmax<-0.2
+C<-K/N0-1 
+#first generate a list of time indices
+t<-0:T 
+N<-K/(1+C*exp(-rmax*t))
+#make it pretty
+simdat4<-data.frame(t=t,N=N)
+simdat4$lambda<-lapply(X =simdat4,FUN =  lambda)
+plot(t,N,type="l")
+
+
+lambda<-function(x){
+  x[i]/x[i-1]
+}
+
+fig4<-ggplot(simdat4,aes(t,N))+
+  geom_point()+
+  theme_bw()+
+  ylab("Population Size")+
+  xlab("Time")
+  fig4
+```
